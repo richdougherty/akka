@@ -15,6 +15,8 @@ import akka.testkit._
 import akka.dispatch.MessageDispatcher
 import java.net.{ SocketAddress }
 import akka.pattern.ask
+import scala.util.Failure
+import annotation.tailrec
 
 object IOActorSpec {
 
@@ -258,7 +260,7 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
 
     def run(n: Int) {
       future onComplete {
-        case Left(e) if check(n, e) ⇒
+        case Failure(e) if check(n, e) ⇒
           if (delay.isDefined) {
             executor match {
               case m: MessageDispatcher ⇒ m.prerequisites.scheduler.scheduleOnce(delay.get)(run(n + 1))
