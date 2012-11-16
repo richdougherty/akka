@@ -196,7 +196,7 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: Rep
       try {
         if (self.underlying eq this) queue enqueue Envelope(message, useSender, system)
         else {
-          println("## RepointableActorRef tell resend due to swap cell " + self.path + " from sender " + sender.path + " msg: " + message)
+          println("## RepointableActorRef tell resend due to swap cell " + self.path + " from sender " + sender + " msg: " + message)
           self.underlying.tell(message, useSender)
         }
       } finally {
