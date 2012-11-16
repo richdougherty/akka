@@ -109,7 +109,9 @@ private[akka] class RepointableActorRef(
         case other ⇒
           underlying.getChildByName(other) match {
             case Some(crs: ChildRestartStats) ⇒ crs.child.asInstanceOf[InternalActorRef].getChild(name)
-            case _                            ⇒ Nobody
+            case _ ⇒
+              println("## RepointableActorRef getChild Nobody -- " + path + " -> " + other)
+              Nobody
           }
       }
     } else this
@@ -126,7 +128,7 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: Rep
   extends Cell {
 
   /*
-   * This lock protects all accesses to this cell’s queues. It also ensures 
+   * This lock protects all accesses to this cell’s queues. It also ensures
    * safe switching to the started ActorCell.
    */
   val lock = new ReentrantLock
@@ -145,7 +147,7 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: Rep
        * The CallingThreadDispatcher nicely dives under the ReentrantLock and
        * breaks things by enqueueing into stale queues from within the message
        * processing which happens in-line for sendSystemMessage() and tell().
-       * Since this is the only possible way to f*ck things up within this 
+       * Since this is the only possible way to f*ck things up within this
        * lock, double-tap (well, N-tap, really); concurrent modification is
        * still not possible because we’re the only thread accessing the queues.
        */
@@ -193,11 +195,15 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: Rep
     if (lock.tryLock(timeout, TimeUnit.MILLISECONDS)) {
       try {
         if (self.underlying eq this) queue enqueue Envelope(message, useSender, system)
-        else self.underlying.tell(message, useSender)
+        else {
+          println("## RepointableActorRef tell resend due to swap cell " + self.path + " from sender " + sender.path + " msg: " + message)
+          self.underlying.tell(message, useSender)
+        }
       } finally {
         lock.unlock()
       }
     } else {
+      println("## RepointableActorRef tell lock timeout in " + self.path + " from sender " + sender.path + " msg: " + message)
       system.deadLetters ! DeadLetter(message, useSender, self)
     }
   }
@@ -205,11 +211,15 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: Rep
     if (lock.tryLock(timeout, TimeUnit.MILLISECONDS)) {
       try {
         if (self.underlying eq this) systemQueue enqueue msg
-        else self.underlying.sendSystemMessage(msg)
+        else {
+          println("## RepointableActorRef sendSystemMessage resend due to swap cell " + self.path + " msg: " + msg)
+          self.underlying.sendSystemMessage(msg)
+        }
       } finally {
         lock.unlock()
       }
     } else {
+      println("## RepointableActorRef sendSystemMessage lock timeout in " + self.path + " msg: " + msg)
       // FIXME: once we have guaranteed delivery of system messages, hook this in!
       system.eventStream.publish(Warning(self.path.toString, getClass, "dropping system message " + msg + " due to lock timeout"))
       system.deadLetters ! DeadLetter(msg, self, self)

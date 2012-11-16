@@ -57,9 +57,11 @@ private[akka] class RemoteSystemDaemon(
 
     val full = Vector() ++ names
     rec(full.mkString("/"), 0) match {
-      case (Nobody, _) ⇒ Nobody
-      case (ref, 0)    ⇒ ref
-      case (ref, n)    ⇒ ref.getChild(full.takeRight(n).iterator)
+      case (Nobody, _) ⇒
+        println("## RemoteDaemon getChild Nobody" + _path + " name: " + full.mkString("/"))
+        Nobody
+      case (ref, 0) ⇒ ref
+      case (ref, n) ⇒ ref.getChild(full.takeRight(n).iterator)
     }
   }
 

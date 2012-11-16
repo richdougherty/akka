@@ -318,7 +318,9 @@ private[akka] class LocalActorRef private[akka] (
   protected def getSingleChild(name: String): InternalActorRef =
     actorCell.getChildByName(name) match {
       case Some(crs: ChildRestartStats) ⇒ crs.child.asInstanceOf[InternalActorRef]
-      case _                            ⇒ Nobody
+      case _ ⇒
+        println("## ActorRef getSingleChild Nobody " + path + " name: " + name)
+        Nobody
     }
 
   override def getChild(names: Iterator[String]): InternalActorRef = {
@@ -526,7 +528,9 @@ private[akka] class VirtualPathContainer(
       val n = name.next()
       if (n.isEmpty) this
       else children.get(n) match {
-        case null ⇒ Nobody
+        case null ⇒
+          println("## ActorRef getChild null=>Nobody " + path + " name: " + name)
+          Nobody
         case some ⇒
           if (name.isEmpty) some
           else some.getChild(name)

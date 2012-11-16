@@ -330,7 +330,12 @@ class RemoteMessage(input: RemoteMessageProtocol, system: ExtendedActorSystem) {
    * Returns a reference to the Actor that this message is destined for.
    * In case this returns a DeadLetterActorRef, you have access to the path using the "originalReceiver" method.
    */
-  lazy val recipient: InternalActorRef = system.provider.actorFor(system.provider.rootGuardian, originalReceiver)
+  lazy val recipient: InternalActorRef = {
+    val result = system.provider.actorFor(system.provider.rootGuardian, originalReceiver)
+    if (result.isTerminated)
+      println("## RemoteMessage recipient terminated " + originalReceiver + " --> " + result)
+    result
+  }
 
   /**
    * Returns the message
